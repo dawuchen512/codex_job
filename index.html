@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>生日排盘</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7efe5;
+        --card: rgba(255, 255, 255, 0.88);
+        --line: rgba(125, 87, 56, 0.16);
+        --text: #40281a;
+        --subtext: #7d5738;
+        --accent: #bc6c25;
+        --accent-strong: #8f4a10;
+        --good: #386641;
+        --shadow: 0 16px 40px rgba(79, 48, 24, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 32%),
+          linear-gradient(160deg, #fff8f0 0%, #f5e6d2 45%, #efd8bc 100%);
+      }
+
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+
+      .hero,
+      .panel,
+      .result-card {
+        background: var(--card);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 28px 22px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        width: 160px;
+        height: 160px;
+        right: -48px;
+        top: -40px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(188, 108, 37, 0.18), rgba(188, 108, 37, 0));
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(188, 108, 37, 0.1);
+        color: var(--accent-strong);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      h1 {
+        margin: 16px 0 10px;
+        font-size: clamp(28px, 6vw, 40px);
+        line-height: 1.12;
+      }
+
+      .lead {
+        margin: 0;
+        color: var(--subtext);
+        font-size: 15px;
+        line-height: 1.7;
+        max-width: 620px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .panel {
+        padding: 20px 16px;
+      }
+
+      .panel h2,
+      .result-card h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .field label {
+        font-size: 14px;
+        color: var(--subtext);
+        font-weight: 600;
+      }
+
+      .field input,
+      .field select,
+      .field textarea,
+      .field button {
+        border-radius: 16px;
+        border: 1px solid rgba(125, 87, 56, 0.18);
+        padding: 14px 16px;
+        font: inherit;
+      }
+
+      .field input,
+      .field select,
+      .field textarea {
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--text);
+      }
+
+      .field textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        color: #fff;
+        border: none;
+        box-shadow: 0 12px 28px rgba(188, 108, 37, 0.25);
+      }
+
+      .secondary-btn {
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--accent-strong);
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .hint {
+        margin: 10px 0 0;
+        color: var(--subtext);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .result-card {
+        padding: 20px 16px;
+      }
+
+      .empty {
+        color: var(--subtext);
+        line-height: 1.8;
+        margin: 0;
+      }
+
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+
+      .chart-title {
+        margin: 0;
+        font-size: 24px;
+      }
+
+      .chart-subtitle {
+        margin: 6px 0 0;
+        color: var(--subtext);
+        font-size: 14px;
+      }
+
+      .pill {
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(56, 102, 65, 0.12);
+        color: var(--good);
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .metric,
+      .interpretation,
+      .five-elements,
+      .timeline {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(125, 87, 56, 0.12);
+        padding: 14px;
+      }
+
+      .metric strong,
+      .section-label {
+        display: block;
+        font-size: 13px;
+        color: var(--subtext);
+        margin-bottom: 8px;
+      }
+
+      .metric span {
+        display: block;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .full-width {
+        grid-column: 1 / -1;
+      }
+
+      .bars {
+        display: grid;
+        gap: 10px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 48px 1fr 34px;
+        gap: 8px;
+        align-items: center;
+        font-size: 13px;
+      }
+
+      .bar-track {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(125, 87, 56, 0.1);
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #dda15e, #bc6c25);
+      }
+
+      .timeline-list,
+      .interpret-list {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text);
+        line-height: 1.75;
+      }
+
+      .footer-note {
+        margin-top: 16px;
+        font-size: 12px;
+        color: var(--subtext);
+        line-height: 1.6;
+      }
+
+      @media (min-width: 768px) {
+        .page {
+          padding: 32px 24px 56px;
+        }
+
+        .layout {
+          grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+          align-items: start;
+        }
+
+        .panel,
+        .result-card {
+          padding: 24px;
+        }
+
+        .form-grid {
+          gap: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="badge">✨ H5 生日排盘页</div>
+        <h1>输入生日，一键生成你的专属排盘</h1>
+        <p class="lead">
+          支持选择出生日期、时间与性别，自动生成基础命盘信息，包括生肖、星座、出生周几、年龄阶段、五行能量倾向与简要解读。
+          适合做活动页、公众号落地页或移动端工具页的原型版本。
+        </p>
+      </section>
+
+      <section class="layout">
+        <form class="panel" id="chart-form">
+          <h2>填写生日信息</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label for="name">称呼</label>
+              <input id="name" name="name" type="text" placeholder="例如：小满" maxlength="20" />
+            </div>
+
+            <div class="field">
+              <label for="birthdate">出生日期</label>
+              <input id="birthdate" name="birthdate" type="date" required />
+            </div>
+
+            <div class="field">
+              <label for="birthtime">出生时间</label>
+              <input id="birthtime" name="birthtime" type="time" value="12:00" required />
+            </div>
+
+            <div class="field">
+              <label for="gender">性别</label>
+              <select id="gender" name="gender">
+                <option value="女">女</option>
+                <option value="男">男</option>
+                <option value="未说明">未说明</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="focus">当前最关注的主题</label>
+              <select id="focus" name="focus">
+                <option value="事业发展">事业发展</option>
+                <option value="情感关系">情感关系</option>
+                <option value="学习成长">学习成长</option>
+                <option value="财富规划">财富规划</option>
+                <option value="身心状态">身心状态</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="message">补充信息</label>
+              <textarea id="message" name="message" placeholder="可填写你的计划、近期状态或期待，页面会展示在结果中。"></textarea>
+            </div>
+
+            <div class="actions">
+              <button class="primary-btn" type="submit">开始排盘</button>
+              <button class="secondary-btn" type="button" id="fill-demo">填入示例</button>
+            </div>
+          </div>
+          <p class="hint">
+            提示：当前页面为前端演示版，采用生日衍生规则生成“轻量排盘”，适合展示与原型验证；若需接入专业命理算法，可继续扩展接口。
+          </p>
+        </form>
+
+        <section class="result-card" id="result-panel">
+          <h2>排盘结果</h2>
+          <p class="empty" id="empty-state">请先输入生日信息并点击“开始排盘”，这里会生成你的专属盘面。</p>
+          <div id="chart-output" hidden></div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const stems = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+      const branches = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+      const zodiacs = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
+      const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      const westernSigns = [
+        ["摩羯座", 120],
+        ["水瓶座", 219],
+        ["双鱼座", 321],
+        ["白羊座", 420],
+        ["金牛座", 521],
+        ["双子座", 621],
+        ["巨蟹座", 723],
+        ["狮子座", 823],
+        ["处女座", 923],
+        ["天秤座", 1024],
+        ["天蝎座", 1123],
+        ["射手座", 1222],
+        ["摩羯座", 1232]
+      ];
+      const hourBranches = [
+        "子时", "丑时", "丑时", "寅时", "寅时", "卯时", "卯时", "辰时", "辰时", "巳时", "巳时", "午时",
+        "午时", "未时", "未时", "申时", "申时", "酉时", "酉时", "戌时", "戌时", "亥时", "亥时", "子时"
+      ];
+
+      const form = document.getElementById("chart-form");
+      const fillDemoBtn = document.getElementById("fill-demo");
+      const emptyState = document.getElementById("empty-state");
+      const chartOutput = document.getElementById("chart-output");
+
+      fillDemoBtn.addEventListener("click", () => {
+        document.getElementById("name").value = "小满";
+        document.getElementById("birthdate").value = "1998-08-16";
+        document.getElementById("birthtime").value = "07:30";
+        document.getElementById("gender").value = "女";
+        document.getElementById("focus").value = "事业发展";
+        document.getElementById("message").value = "最近想换工作，希望知道自己的阶段优势和节奏安排。";
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const name = (formData.get("name") || "你").toString().trim() || "你";
+        const birthdate = formData.get("birthdate").toString();
+        const birthtime = formData.get("birthtime").toString();
+        const gender = formData.get("gender").toString();
+        const focus = formData.get("focus").toString();
+        const message = formData.get("message").toString().trim();
+
+        if (!birthdate || !birthtime) {
+          alert("请完整填写出生日期和出生时间。");
+          return;
+        }
+
+        const birthDateTime = new Date(`${birthdate}T${birthtime}:00`);
+        if (Number.isNaN(birthDateTime.getTime())) {
+          alert("日期或时间格式不正确，请重新选择。");
+          return;
+        }
+
+        const profile = buildProfile({ name, birthDateTime, gender, focus, message });
+        renderChart(profile);
+      });
+
+      function buildProfile({ name, birthDateTime, gender, focus, message }) {
+        const year = birthDateTime.getFullYear();
+        const month = birthDateTime.getMonth() + 1;
+        const day = birthDateTime.getDate();
+        const hour = birthDateTime.getHours();
+        const minute = birthDateTime.getMinutes();
+        const numericDate = month * 100 + day;
+        const westernSign = westernSigns.find(([_, threshold]) => numericDate < threshold)[0];
+        const zodiacIndex = ((year - 4) % 12 + 12) % 12;
+        const stemIndex = ((year - 4) % 10 + 10) % 10;
+        const branchIndex = ((year - 4) % 12 + 12) % 12;
+        const ganzhiYear = `${stems[stemIndex]}${branches[branchIndex]}`;
+        const weekday = weekdays[birthDateTime.getDay()];
+        const age = calculateAge(birthDateTime);
+        const lifeStage = describeLifeStage(age);
+        const timeLabel = hourBranches[hour];
+        const fateNumber = calculateFateNumber(year, month, day);
+        const elementScores = calculateElementScores(year, month, day, hour, minute);
+        const dominantElement = Object.entries(elementScores).sort((a, b) => b[1] - a[1])[0][0];
+        const luckyDirection = ["正东", "东南", "正南", "西南", "正西", "西北", "正北", "东北"][fateNumber % 8];
+        const focusSuggestion = buildFocusSuggestion(focus, dominantElement, westernSign);
+
+        return {
+          name,
+          gender,
+          focus,
+          message,
+          birthdateText: `${year}年${month}月${day}日 ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+          zodiac: zodiacs[zodiacIndex],
+          westernSign,
+          ganzhiYear,
+          weekday,
+          age,
+          lifeStage,
+          timeLabel,
+          fateNumber,
+          dominantElement,
+          luckyDirection,
+          elementScores,
+          interpretations: buildInterpretations({ name, gender, focus, dominantElement, westernSign, zodiac: zodiacs[zodiacIndex], lifeStage, timeLabel, fateNumber }),
+          timeline: buildTimeline({ age, focus, dominantElement }),
+          focusSuggestion
+        };
+      }
+
+      function calculateAge(date) {
+        const now = new Date();
+        let age = now.getFullYear() - date.getFullYear();
+        const hasBirthdayPassed =
+          now.getMonth() > date.getMonth() ||
+          (now.getMonth() === date.getMonth() && now.getDate() >= date.getDate());
+        if (!hasBirthdayPassed) age -= 1;
+        return Math.max(age, 0);
+      }
+
+      function calculateFateNumber(year, month, day) {
+        const total = `${year}${month}${day}`
+          .split("")
+          .reduce((sum, num) => sum + Number(num), 0);
+        return ((total - 1) % 9) + 1;
+      }
+
+      function calculateElementScores(year, month, day, hour, minute) {
+        const seed = [year, month, day, hour, minute].reduce((sum, value, index) => sum + value * (index + 2), 0);
+        return {
+          木: (seed % 9) + 2,
+          火: ((seed >> 1) % 9) + 2,
+          土: ((seed >> 2) % 9) + 2,
+          金: ((seed >> 3) % 9) + 2,
+          水: ((seed >> 4) % 9) + 2
+        };
+      }
+
+      function describeLifeStage(age) {
+        if (age <= 18) return "启蒙蓄力期";
+        if (age <= 28) return "成长突破期";
+        if (age <= 40) return "稳步成长期";
+        if (age <= 55) return "资源沉淀期";
+        return "回归丰盛期";
+      }
+
+      function buildFocusSuggestion(focus, dominantElement, westernSign) {
+        const focusMap = {
+          事业发展: `适合用“${dominantElement}”的方式推进事业：先定方向，再集中资源执行。`,
+          情感关系: `情感上宜发挥${westernSign}的表达优势，多创造稳定而具体的陪伴时刻。`,
+          学习成长: `近期学习节奏宜以短周期复盘为主，把热情沉淀成可复用的方法。`,
+          财富规划: `财富议题上建议建立预算边界，再逐步尝试更高收益的安排。`,
+          身心状态: `身心调节可从作息与运动规律入手，让能量先稳定下来。`
+        };
+        return focusMap[focus] || "保持稳定节奏，先照顾好日常秩序，再等待机会放大。";
+      }
+
+      function buildInterpretations({ name, gender, focus, dominantElement, westernSign, zodiac, lifeStage, timeLabel, fateNumber }) {
+        return [
+          `${name}的基础盘面以“${dominantElement}”能量较为突出，做事往往有自己的节奏感与主见。`,
+          `${zodiac}年出生叠加${westernSign}气质，通常兼具感受力与行动力，适合先判断趋势再进入投入。`,
+          `当前处于“${lifeStage}”，适合围绕“${focus}”做重点布局，不必一次追求面面俱到。`,
+          `${gender}命盘演示中落在${timeLabel}，说明你更容易在固定节律、明确边界中发挥稳定表现。`,
+          `命数 ${fateNumber} 对应的年度关键词是“聚焦、整合、放大”，越懂得取舍，越容易迎来结果。`
+        ];
+      }
+
+      function buildTimeline({ age, focus, dominantElement }) {
+        const phaseOne = age < 25 ? "未来3个月" : "接下来半年";
+        const phaseTwo = age < 25 ? "未来6个月" : "未来1年";
+        return [
+          `${phaseOne}：围绕“${focus}”梳理目标，减少无效消耗，把时间集中在最关键的两件事。`,
+          `${phaseTwo}：${dominantElement}元素增强，适合做成果展示、关系连接或阶段性收获。`,
+          `长期建议：维持稳定输入与稳定休息，越是规律，盘面中的优势越能持续兑现。`
+        ];
+      }
+
+      function renderChart(profile) {
+        const barsHtml = Object.entries(profile.elementScores)
+          .map(([name, value]) => `
+            <div class="bar-row">
+              <span>${name}</span>
+              <div class="bar-track"><div class="bar-fill" style="width:${Math.min(value * 10, 100)}%"></div></div>
+              <span>${value}</span>
+            </div>
+          `)
+          .join("");
+
+        const interpretationHtml = profile.interpretations.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const timelineHtml = profile.timeline.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const messageBlock = profile.message
+          ? `
+            <div class="timeline full-width">
+              <strong class="section-label">你的补充信息</strong>
+              <div>${escapeHtml(profile.message)}</div>
+            </div>
+          `
+          : "";
+
+        chartOutput.innerHTML = `
+          <div class="chart-header">
+            <div>
+              <p class="chart-title">${escapeHtml(profile.name)}的生日排盘</p>
+              <p class="chart-subtitle">出生于 ${profile.birthdateText} · ${profile.gender} · 当前关注：${profile.focus}</p>
+            </div>
+            <div class="pill">旺势元素：${profile.dominantElement}</div>
+          </div>
+
+          <div class="chart-grid">
+            <div class="metric">
+              <strong>干支年份</strong>
+              <span>${profile.ganzhiYear}年</span>
+            </div>
+            <div class="metric">
+              <strong>生肖 / 星座</strong>
+              <span>${profile.zodiac} / ${profile.westernSign}</span>
+            </div>
+            <div class="metric">
+              <strong>出生周几</strong>
+              <span>${profile.weekday}</span>
+            </div>
+            <div class="metric">
+              <strong>年龄阶段</strong>
+              <span>${profile.age}岁 · ${profile.lifeStage}</span>
+            </div>
+            <div class="metric">
+              <strong>出生时辰</strong>
+              <span>${profile.timeLabel}</span>
+            </div>
+            <div class="metric">
+              <strong>命数 / 吉位</strong>
+              <span>${profile.fateNumber} / ${profile.luckyDirection}</span>
+            </div>
+
+            <div class="five-elements full-width">
+              <strong class="section-label">五行能量分布</strong>
+              <div class="bars">${barsHtml}</div>
+            </div>
+
+            <div class="interpretation full-width">
+              <strong class="section-label">简要命盘解读</strong>
+              <ol class="interpret-list">${interpretationHtml}</ol>
+            </div>
+
+            <div class="timeline full-width">
+              <strong class="section-label">阶段建议</strong>
+              <ul class="timeline-list">${timelineHtml}</ul>
+            </div>
+
+            <div class="timeline full-width">
+              <strong class="section-label">针对「${escapeHtml(profile.focus)}」的提示</strong>
+              <div>${escapeHtml(profile.focusSuggestion)}</div>
+            </div>
+
+            ${messageBlock}
+          </div>
+
+          <p class="footer-note">
+            本页面为 H5 演示版本，基于生日、时辰与规则映射生成轻量排盘，不替代专业命理分析。若你希望进一步升级，可追加真太阳时、节气换月或后端排盘接口。
+          </p>
+        `;
+
+        emptyState.hidden = true;
+        chartOutput.hidden = false;
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+    </script>
+  </body>
+</html>
